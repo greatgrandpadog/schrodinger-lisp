@@ -3,7 +3,7 @@
 from seval import eval, Env
 from sparser import tokenize, parse, to_string, isa, Symbol
 
-class Closure():
+class Combiner():
 	def __init__(self, clos_env, vars, sym, body):
 		self.clos_env = clos_env
 		self.vars = vars
@@ -18,6 +18,8 @@ class Closure():
 		
 	def __repr__(self):
 		return "vau (%s)"%(','.join(self.vars),)
+
+#class Applicative():
 
 def define(v,var,e):
 	val = eval(e, v)
@@ -78,7 +80,7 @@ basic_env = Env({
 	'cond':	cond,
 	':=':	define,
 	'<-':	setvar,
-	'vau':	lambda v,args,sym,body: Closure(v,args,sym,body),
+	'vau':	lambda v,args,sym,body: Combiner(v,args,sym,body),
 	'quote': lambda v,x: x,
 	'seq': sequence,
 	'print': vprint,

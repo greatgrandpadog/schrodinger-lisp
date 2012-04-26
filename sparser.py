@@ -7,11 +7,14 @@ def tokenize(s):
 	"Convert a string into a list of tokens."
 	i = 0
 	end = len(s)
-	delimiters = "();"
+	delimiters = "();'"
 	sym_illegal = string.whitespace+delimiters
 	tokens = []
 	while i < end:
-		if s[i] in string.whitespace:
+		if i+1 < end and s[i:i+2] == "::":
+			token = "::"
+			i += 2
+		elif s[i] in string.whitespace:
 			i += 1
 			continue
 		elif s[i] in delimiters:
@@ -20,6 +23,8 @@ def tokenize(s):
 		else:
 			n = i+1
 			while n != end and not s[n] in sym_illegal:
+				if n+1 < end and s[n:n+2] == "::":
+					break
 				n += 1
 			token = s[i:n]
 			i = n
@@ -40,8 +45,13 @@ def parse(tokens):
 	elif ";" == token: #ignore the next full expression
 		parse(tokens)
 		return parse(tokens) if len(tokens) > 0 else None
+	elif "'" == token: #wrap the next expression in a quote
+		return [Symbol('quote'),parse(tokens)]
 	elif ')' == token:
 		raise SyntaxError('unexpected )')
+	elif tokens[0] == "::": #lookahead, desugar namespace into eval call
+		tokens.pop(0)
+		return [Symbol('eval'),atom(token),parse(tokens)]
 	else:
 		return atom(token)
 
