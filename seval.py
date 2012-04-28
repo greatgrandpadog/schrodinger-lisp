@@ -1,5 +1,6 @@
 #### seval.py
 
+from stypes import Tail
 from sparser import to_string, Symbol, isa
 
 ### binding environments
@@ -22,14 +23,29 @@ class Env(dict):
 		else: raise ValueError("%s is not defined"%(var,))
 
 #### eval
+depth = 0
 
 def eval(x, env):
+	"Trampoline for the actual eval implementation"
+	NextCall = Tail(x,env,lambda x:x)
+	while isa(NextCall, Tail):
+		NextCall = eval_t(*NextCall)
+	return NextCall
+
+def eval_t(x, env, k):
 	"Evaluate an expression in an environment."
-	if isa(x, Symbol):		  # variable reference
-		return env[x]
-	elif isa(x, list):		  # (proc exp*)
-		proc = eval(x[0], env)
-		if hasattr(proc, '__call__'):
-			return proc(env,*x[1:])
-		raise ValueError("%s = %s is not a procedure" % (to_string(x[0]),to_string(proc)))
-	return x
+	val = None
+	while True:
+		if isa(x, Symbol):		  # variable reference
+			val = k(env[x])
+		elif isa(x, list):		  # (proc exp*)
+			def try_call(proc):
+				if hasattr(proc, '__call__'):
+					return proc(k,env,*x[1:])
+				raise ValueError("%s = %s is not a procedure" % (to_string(x[0]),to_string(proc)))
+			return Tail(x[0], env, try_call)
+		else:
+			val = k(x)
+		if not isa(val, Tail):
+			return val
+		(x,env,k) = val
